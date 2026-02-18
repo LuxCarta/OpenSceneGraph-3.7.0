@@ -436,7 +436,7 @@ class OSG_EXPORT Image : public BufferData
           * power of two and are within the maximum texture size for
           * the host machine.
         */
-        void ensureValidSizeForTexturing(GLint maxTextureSize);
+        bool ensureValidSizeForTexturing(GLint maxTextureSize, bool verbose = true);
 
         static bool isPackedType(GLenum type);
         static GLenum computePixelFormat(GLenum pixelFormat);

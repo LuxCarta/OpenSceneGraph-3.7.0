@@ -1940,21 +1940,32 @@ void Image::flipDepth()
 }
 
 
-void Image::ensureValidSizeForTexturing(GLint maxTextureSize)
+bool Image::ensureValidSizeForTexturing(GLint maxTextureSize, bool verbose)
 {
     int new_s = computeNearestPowerOfTwo(_s);
     int new_t = computeNearestPowerOfTwo(_t);
 
-    if (new_s>maxTextureSize) new_s = maxTextureSize;
-    if (new_t>maxTextureSize) new_t = maxTextureSize;
+    if (new_s > maxTextureSize) new_s = maxTextureSize;
+    if (new_t > maxTextureSize) new_t = maxTextureSize;
 
-    if (new_s!=_s || new_t!=_t)
+    if (new_s != _s || new_t != _t)
     {
-        if (!_fileName.empty()) { OSG_NOTICE << "Scaling image '"<<_fileName<<"' from ("<<_s<<","<<_t<<") to ("<<new_s<<","<<new_t<<")"<<std::endl; }
-        else { OSG_NOTICE << "Scaling image from ("<<_s<<","<<_t<<") to ("<<new_s<<","<<new_t<<")"<<std::endl; }
+        if (verbose)
+        {
+            if (!_fileName.empty())
+            {
+                OSG_NOTICE << "Scaling image '" << _fileName << "' from (" << _s << "," << _t << ") to (" << new_s << "," << new_t << ")" << std::endl;
+            }
+            else
+            {
+                OSG_NOTICE << "Scaling image from (" << _s << "," << _t << ") to (" << new_s << "," << new_t << ")" << std::endl;
+            }
+        }
 
-        scaleImage(new_s,new_t,_r);
+        scaleImage(new_s, new_t, _r);
+        return true;
     }
+    return false;
 }
 
 bool Image::supportsTextureSubloading() const
