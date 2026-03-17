@@ -325,7 +325,12 @@ class OSG_EXPORT Program : public osg::StateAttribute
                 const ActiveUniformMap& getActiveUniforms() const {return _uniformInfoMap;}
                 const ActiveVarInfoMap& getActiveAttribs() const {return _attribInfoMap;}
                 const UniformBlockMap& getUniformBlocks() const {return _uniformBlockMap; }
-                inline GLint getUniformLocation( unsigned int uniformNameID ) const { ActiveUniformMap::const_iterator itr = _uniformInfoMap.find(uniformNameID); return (itr!=_uniformInfoMap.end()) ? itr->second._location : -1; }
+                inline GLint getUniformLocation( unsigned int uniformNameID ) const 
+                { 
+                    ActiveUniformMap::const_iterator itr = _uniformInfoMap.find(uniformNameID); 
+                    GLint Ret =  (itr!=_uniformInfoMap.end()) ? itr->second._location : -1; 
+                    return Ret;
+                }
 
                 /**
                   * Alternative version of getUniformLocation( unsigned int uniformNameID )

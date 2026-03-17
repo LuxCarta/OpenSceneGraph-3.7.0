@@ -1790,6 +1790,8 @@ HGLRC GraphicsWindowWin32::createContextImplementation()
                 int attribs[ 16 ];
 
                 unsigned int major = 1, minor = 0;
+//                glGetIntegerv(GL_MAJOR_VERSION, &major);
+//                glGetIntegerv(GL_MINOR_VERSION, &minor);
                 if( !_traits->getContextVersion(major, minor) || major<3 )
                 {
                     OSG_NOTIFY( osg::WARN ) << "GL3: Non-GL3 version number: " << _traits->glContextVersion << std::endl;
