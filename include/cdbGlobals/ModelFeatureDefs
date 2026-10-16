@@ -6,6 +6,13 @@
 #include <ogrsf_frmts.h>
 #include "cdbGlobals/cdbGeomTypes"
 
+// CDB AHGT (absolute height flag) is a dBASE logical field: T/F (GDAL exposes it as a 1-char string),
+// so GetFieldAsInteger() always returned 0. Accept T/t/Y/y/1 as true.
+inline int cdbLogical(const char* a)
+{
+	return (a && (*a == 'T' || *a == 't' || *a == 'Y' || *a == 'y' || *a == '1')) ? 1 : 0;
+}
+
 typedef enum 
 {
 	NewInstanace = 0,
@@ -141,9 +148,10 @@ struct CDB_Model_Class
 		cmix = f->GetFieldAsInteger("CMIX");
 		bsr = f->GetFieldAsDouble("BSR");
 		bbw = f->GetFieldAsDouble("BBW");
+		bbl = f->GetFieldAsDouble("BBL");
 		bbh = f->GetFieldAsDouble("BBH");
 		apid = f->GetFieldAsString("APID");
-		ahgt = f->GetFieldAsInteger("AHGT");
+		ahgt = cdbLogical(f->GetFieldAsString("AHGT"));
 	}
 
 	void set_feature(OGRFeature * f, OGRFeatureDefn * Defn, GIntBig FID)
@@ -312,7 +320,7 @@ struct CDB_GTModel_Class
 		bsr = f->GetFieldAsDouble("BSR");
 		bbw = f->GetFieldAsDouble("BBW");
 		bbh = f->GetFieldAsDouble("BBH");
-		ahgt = f->GetFieldAsInteger("AHGT");
+		ahgt = cdbLogical(f->GetFieldAsString("AHGT"));
 	}
 
 	void set_feature(OGRFeature * f, OGRFeatureDefn * Defn, GIntBig FID)
@@ -480,7 +488,7 @@ struct CDB_Model_Runtime_Class
 		if(bbh_Index >= 0)
 			bbh = f->GetFieldAsDouble(bbh_Index);
 		if (ahgt_index >= 0)
-			ahgt = f->GetFieldAsInteger(ahgt_index);
+			ahgt = cdbLogical(f->GetFieldAsString(ahgt_index));
 		return cnam;
 	}
 
@@ -541,7 +549,7 @@ struct CDB_AP_Light_Class
 		int ahgt_Index = f->GetFieldIndex("AHGT");
 		if (ahgt_Index >= 0)
 		{
-			ahgt = f->GetFieldAsInteger(ahgt_Index);
+			ahgt = cdbLogical(f->GetFieldAsString(ahgt_Index));
 		}
 
 		return cnam;
@@ -568,7 +576,7 @@ struct CDB_Env_Light_Class
 		int ahgt_Index = f->GetFieldIndex("AHGT");
 		if (ahgt_Index >= 0)
 		{
-			ahgt = f->GetFieldAsInteger(ahgt_Index);
+			ahgt = cdbLogical(f->GetFieldAsString(ahgt_Index));
 		}
 
 		int cmix_Index = f->GetFieldIndex("CMIX");
