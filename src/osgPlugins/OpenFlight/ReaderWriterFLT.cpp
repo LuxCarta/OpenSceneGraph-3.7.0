@@ -20,6 +20,10 @@
 #include <stdexcept>
 #include <osg/Notify>
 #include <osg/ProxyNode>
+#include <osg/LOD>
+#include <osg/NodeVisitor>
+#include <algorithm>
+#include <vector>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 #include <osgDB/Registry>
@@ -40,6 +44,37 @@
 using namespace flt;
 using namespace osg;
 using namespace osgDB;
+
+namespace
+{
+    // CDB (OGC 16-009r4, Vol.6 6.8 Req.26): LOD nodes are activated by their Significant Size, sibling LOD nodes
+    // are mutually exclusive and sorted by decreasing Significant Size (6.8.1 Exchange LODs). When a LOD record has
+    // no switch distances, LevelOfDetail derives switch-in from its Significant Size and leaves switch-out at 0, so
+    // a coarse sibling stays drawn under the finer one. Give each such sibling a switch-out equal to the switch-in
+    // of the next finer sibling.
+    class ExclusiveSigSizeLODs : public osg::NodeVisitor
+    {
+    public:
+        ExclusiveSigSizeLODs() : osg::NodeVisitor(TRAVERSE_ALL_CHILDREN) { }
+        void apply(osg::Group& group) override
+        {
+            std::vector<osg::LOD*> lods;
+            for (unsigned i = 0; i < group.getNumChildren(); ++i)
+            {
+                osg::LOD* lod = dynamic_cast<osg::LOD*>(group.getChild(i));
+                if (lod && lod->getNumRanges() == 1 && lod->getMinRange(0) == 0.0f && lod->getMaxRange(0) > 0.0f)
+                    lods.push_back(lod);
+            }
+            if (lods.size() > 1)
+            {
+                std::sort(lods.begin(), lods.end(), [](osg::LOD* a, osg::LOD* b) { return a->getMaxRange(0) > b->getMaxRange(0); });
+                for (size_t i = 0; i + 1 < lods.size(); ++i)
+                    lods[i]->setRange(0, lods[i + 1]->getMaxRange(0), lods[i]->getMaxRange(0));
+            }
+            traverse(group);
+        }
+    };
+}
 
 // pull in symbols from attr plugin
 USE_OSGPLUGIN(attr)
@@ -182,6 +217,14 @@ public:
                     external = dynamic_cast<osg::Node*>(external->clone(osg::CopyOp(osg::CopyOp::DEEP_COPY_NODES)));
 
                 node.addChild(external.get());
+            }
+            else
+            {
+                OSG_WARN << "OpenFlight: external reference " << filename << " not loaded; search paths:";
+                if (_options.valid())
+                    for (const std::string& p : _options->getDatabasePathList())
+                        OSG_WARN << " [" << p << "]";
+                OSG_WARN << std::endl;
             }
         }
     }
@@ -660,6 +703,12 @@ class FLTReaderWriter : public ReaderWriter
                     osgUtil::Optimizer::MERGE_GEODES |
                     osgUtil::Optimizer::TESSELLATE_GEOMETRY |
                     osgUtil::Optimizer::STATIC_OBJECT_DETECTION);
+            }
+
+            if (document.getCDBModel_Has_Sigsize())
+            {
+                ExclusiveSigSizeLODs exclusive;
+                document.getHeaderNode()->accept(exclusive);
             }
 
 			if (document.getTextureInArchive())
